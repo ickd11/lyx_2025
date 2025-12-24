@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Memory Galaxy - Infinite</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --gold-dim: rgba(212, 175, 55, 0.3);
+            --bg: #050505;
+            --card-bg: rgba(20, 20, 20, 0.8);
+        }
+        
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            font-family: -apple-system, sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent; /* 移除手机点击高亮 */
+        }
+
+        /* 定制滚动条 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+        /* 背景微粒层 */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* 顶部导航 */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px 40px;
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, #000 0%, transparent 100%);
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+        
+        nav a, nav h1 { pointer-events: auto; }
+
+        .back-btn {
+            color: var(--gold);
+            text-decoration: none;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 1px solid var(--gold-dim);
+            padding: 8px 20px;
+            border-radius: 30px;
+            background: rgba(0,0,0,0.5);
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .back-btn:hover {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 0 15px var(--gold-dim);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--gold);
+            letter-spacing: 4px;
+            font-weight: 300;
+            text-shadow: 0 0 10px var(--gold-dim);
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        /* 瀑布流容器 */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        /* 瀑布流核心布局 */
+        .masonry {
+            column-count: 5;
+            column-gap: 20px;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 1400px) { .masonry { column-count: 4; } }
+        @media (max-width: 1100px) { .masonry { column-count: 3; } }
+        @media (max-width: 800px)  { .masonry { column-count: 2; } nav { padding: 20px; } }
+        @media (max-width: 500px)  { .masonry { column-count: 1; } h1 { font-size: 1.2rem; } }
+
+        /* 图片卡片 */
+        .item {
+            break-inside: avoid;
+            margin-bottom: 20px;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+            cursor: zoom-in;
+            opacity: 0;
+            animation: fadeInUp 0.6s forwards;
+            -webkit-column-break-inside: avoid; /* Safari 兼容 */
+        }
+
+        .item:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+            box-shadow: 0 10px 25px -10px rgba(0,0,0,0.8);
+            z-index: 2;
+        }
+
+        .item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: filter 0.3s;
+            filter: brightness(0.9);
+        }
+
+        .item:hover img { filter: brightness(1.1); }
+
+        /* 灯箱 (全屏查看) */
+        .lightbox {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .lightbox img {
+            max-width: 95vw;
+            max-height: 85vh; /* 留出空间给底部文字 */
+            border: 1px solid var(--gold);
+            box-shadow: 0 0 30px var(--gold-dim);
+            border-radius: 4px;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+            object-fit: contain;
+        }
+
+        .lightbox.active img { transform: scale(1); }
+
+        /* 灯箱控件 */
+        .lb-close {
+            position: absolute;
+            top: 20px; right: 30px;
+            color: #fff;
+            font-size: 40px;
+            cursor: pointer;
+            z-index: 1002;
+            opacity: 0.7;
+            padding: 10px;
+        }
+        
+        .lb-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 40px;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            padding: 40px 20px;
+            transition: all 0.3s;
+            user-select: none;
+            z-index: 1001;
+        }
+        .lb-nav:hover { color: var(--gold); background: rgba(0,0,0,0.2); }
+        .lb-prev { left: 0; }
+        .lb-next { right: 0; }
+
+        /* 手机端隐藏箭头，使用滑动 */
+        @media (max-width: 768px) {
+            .lb-nav { display: none; } 
+        }
+        
+        .lb-counter {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 2px;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <nav>
+        <a href="christmas.html" class="back-btn">← Back</a>
+        <h1>Memory Wall</h1>
+        <div style="width: 80px;"></div>
+    </nav>
+
+    <div class="container">
+        <div class="masonry" id="gallery">
+            </div>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <div class="lb-close" onclick="closeLightbox()">&times;</div>
+        <div class="lb-nav lb-prev" onclick="changePhoto(-1)">&#10094;</div>
+        <div class="lb-nav lb-next" onclick="changePhoto(1)">&#10095;</div>
+        
+        <img src="" id="lb-img" alt="Full view">
+        <div class="lb-counter" id="lb-counter"></div>
+    </div>
+
+    <script>
+        // =========================================================
+        // 1. 照片数据配置区
+        // =========================================================
+        
+        // 【重要】请将你在 christmas.html 里的 photoUrls 数组完整复制到这里
+        const photoUrls = [
+            'https://ickd11.github.io/lyx_2025/imgs/1.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/2.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/3.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/4.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/5.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/6.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/7.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/8.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/9.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/10.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/11.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/12.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/13.jpg',
+            'https://ickd11.github.io/lyx_2025/imgs/14.jpg',
+            'https://ickd11.github.io/lyx_2025/15.jpg',
+            'https://ickd11.github.io/lyx_2025/16.jpg',
+            'https://ickd11.github.io/lyx_2025/17.jpg',
+            'https://ickd11.github.io/lyx_2025/18.jpg',
+            'https://ickd11.github.io/lyx_2025/19.jpg',
+            'https://ickd11.github.io/lyx_2025/20.jpg',
+            'https://ickd11.github.io/lyx_2025/21.jpg',
+            'https://ickd11.github.io/lyx_2025/22.jpg',
+            'https://ickd11.github.io/lyx_2025/23.jpg',
+            'https://ickd11.github.io/lyx_2025/24.jpg',
+            'https://ickd11.github.io/lyx_2025/25.jpg',
+            'https://ickd11.github.io/lyx_2025/26.jpg',
+            'https://ickd11.github.io/lyx_2025/27.jpg',
+            'https://ickd11.github.io/lyx_2025/28.jpg',
+            'https://ickd11.github.io/lyx_2025/29.jpg',
+            'https://ickd11.github.io/lyx_2025/30.jpg',
+            'https://ickd11.github.io/lyx_2025/31.jpg',
+            'https://ickd11.github.io/lyx_2025/32.jpg'
+        ];
+
+        // 自动生成演示数据（如果你已经填了照片，这段 if 代码可以忽略或删除）
+        if(photoUrls.length === 0) {
+            for(let i=0; i<30; i++) {
+                const h = 200 + Math.floor(Math.random() * 250); // 随机高度
+                const hue = (i * 15) % 360;
+                // 生成SVG占位图
+                const svg = `data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='${h}'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:hsl(${hue}, 20%25, 15%25);'/%3E%3Cstop offset='100%25' style='stop-color:hsl(${hue}, 25%25, 10%25);'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23d4af37' font-family='sans-serif' font-size='16'%3EPHOTO ${i+1}%3C/text%3E%3C/svg%3E`;
+                photoUrls.push(svg);
+            }
+        }
+
+        // =========================================================
+        // 2. 核心逻辑
+        // =========================================================
+
+        const gallery = document.getElementById('gallery');
+        const lightbox = document.getElementById('lightbox');
+        const lbImg = document.getElementById('lb-img');
+        const lbCounter = document.getElementById('lb-counter');
+        let currentIndex = 0;
+
+        // --- 渲染瀑布流 ---
+        function renderGallery() {
+            photoUrls.forEach((url, index) => {
+                const item = document.createElement('div');
+                item.className = 'item';
+                // 交错动画延迟
+                item.style.animationDelay = `${Math.min(index * 0.05, 1.5)}s`; 
+                
+                const img = document.createElement('img');
+                img.setAttribute('loading', 'lazy'); // 启用原生懒加载
+                img.src = url;
+                img.alt = `Memory ${index}`;
+                
+                // 点击打开大图
+                item.onclick = () => openLightbox(index);
+                
+                item.appendChild(img);
+                gallery.appendChild(item);
+            });
+        }
+
+        // --- 灯箱控制 ---
+        function openLightbox(index) {
+            currentIndex = index;
+            updateLightbox();
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden'; // 锁定背景滚动
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function changePhoto(dir) {
+            currentIndex += dir;
+            // 循环切换
+            if(currentIndex < 0) currentIndex = photoUrls.length - 1;
+            if(currentIndex >= photoUrls.length) currentIndex = 0;
+            updateLightbox();
+        }
+
+        function updateLightbox() {
+            // 简单的淡入淡出效果
+            lbImg.style.opacity = 0.6;
+            lbImg.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                lbImg.src = photoUrls[currentIndex];
+                lbImg.style.opacity = 1;
+                lbImg.style.transform = 'scale(1)';
+            }, 150);
+            
+            lbCounter.textContent = `${currentIndex + 1} / ${photoUrls.length}`;
+        }
+
+        // --- 键盘与点击控制 ---
+        document.addEventListener('keydown', (e) => {
+            if(!lightbox.classList.contains('active')) return;
+            if(e.key === 'Escape') closeLightbox();
+            if(e.key === 'ArrowLeft') changePhoto(-1);
+            if(e.key === 'ArrowRight') changePhoto(1);
+        });
+
+        lightbox.onclick = (e) => {
+            if(e.target === lightbox) closeLightbox(); // 点击黑色背景关闭
+        };
+
+        // =========================================================
+        // 3. 手机端滑动切换 (Touch Swipe)
+        // =========================================================
+        
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const minSwipeDistance = 50; 
+
+        lightbox.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        lightbox.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+
+        function handleSwipe() {
+            if (!lightbox.classList.contains('active')) return;
+            const distance = touchStartX - touchEndX;
+            
+            if (Math.abs(distance) > minSwipeDistance) {
+                if (distance > 0) {
+                    changePhoto(1); // 左滑 -> 下一张
+                } else {
+                    changePhoto(-1); // 右滑 -> 上一张
+                }
+            }
+        }
+
+        // =========================================================
+        // 4. 背景微粒动画 (优化性能版)
+        // =========================================================
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        const particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * height;
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + 20;
+                this.speed = 0.2 + Math.random() * 0.4; // 慢速上浮
+                this.size = Math.random() * 1.5;
+                this.alpha = 0.1 + Math.random() * 0.3;
+            }
+            update() {
+                this.y -= this.speed;
+                if(this.y < -10) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = `rgba(212, 175, 55, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+
+        // 创建粒子（数量适中，避免卡顿）
+        for(let i=0; i<40; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        
+        // 启动程序
+        renderGallery();
+        animate();
+
+    </script>
+</body>
+</html>
