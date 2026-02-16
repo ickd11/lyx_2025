@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>甜心数独派对</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #FF9A8B 0%, #FF6A88 55%, #FF99AC 100%);
+            --board-bg: #ffffff;
+            --line-color: #FF1493; 
+            --thin-line: #FFB6C1; 
+            --highlight: #FFFACD;
+            --selected: #E6E6FA;
+            --txt-primary: #FFFFFF;
+            --txt-given: #8A2BE2;
+            --txt-input: #FF1493;
+            --btn-easy: #FFD700;
+            --btn-medium: #FF69B4;
+            --btn-hard: #9370DB;
+            --btn-numpad: #87CEEB;
+            --pop-shadow: 0px 4px 0px rgba(0,0,0,0.15);
+            --pop-shadow-active: 0px 1px 0px rgba(0,0,0,0.15);
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', 'Rounded Mplus 1c', sans-serif;
+            background-image: var(--bg-gradient);
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-evenly;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* --- 新增：返回首页按钮 --- */
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: #fff;
+            border: 2px solid #fff;
+            border-radius: 20px; /* 胶囊形状 */
+            padding: 8px 15px;
+            text-decoration: none;
+            color: #FF6A88;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: var(--pop-shadow);
+            transition: all 0.1s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-btn:active {
+            transform: translateY(3px);
+            box-shadow: var(--pop-shadow-active);
+        }
+
+        h1 { 
+            color: var(--txt-primary); 
+            margin: 10px 0 5px 0; 
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            text-shadow: 2px 2px 0px #FF1493;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .controls { 
+            display: flex; 
+            gap: 8px; 
+            width: 94vw;
+            max-width: 400px;
+            justify-content: center;
+        }
+        
+        button {
+            flex: 1;
+            padding: 10px 0;
+            border: 2px solid #fff;
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: var(--pop-shadow);
+            background: transparent;
+            touch-action: manipulation;
+        }
+        
+        button:active { transform: translateY(3px); box-shadow: var(--pop-shadow-active); }
+        button.active { transform: translateY(2px); box-shadow: var(--pop-shadow-active); filter: brightness(0.9); }
+
+        #btn-easy { background-color: var(--btn-easy); color: #d35400; }
+        #btn-medium { background-color: var(--btn-medium); }
+        #btn-hard { background-color: var(--btn-hard); }
+
+        .board-container {
+            width: min(94vw, 55vh);
+            height: min(94vw, 55vh);
+            max-width: 500px;
+            max-height: 500px;
+        }
+
+        .board {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            border: 3px solid var(--line-color);
+            background-color: var(--board-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(255, 20, 147, 0.3);
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(min(94vw, 55vh) / 14); 
+            font-weight: bold;
+            border: 0.5px solid var(--thin-line);
+            cursor: pointer;
+            color: var(--txt-input);
+        }
+
+        .cell:nth-child(3n) { border-right: 2px solid var(--line-color); }
+        .cell:nth-child(9n) { border-right: none; }
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--line-color); }
+        
+        .cell.given { color: var(--txt-given); background-color: #fff0f5; }
+        .cell.selected { background-color: var(--selected); }
+        .cell.highlight { background-color: var(--highlight); }
+        .cell.error { color: #FF0000; background-color: #FFB6C1; animation: shake 0.3s; }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            width: 94vw;
+            max-width: 400px;
+            margin-bottom: max(10px, env(safe-area-inset-bottom));
+        }
+
+        .num-btn {
+            aspect-ratio: 1;
+            background-color: var(--btn-numpad);
+            border: 2px solid #fff;
+            border-radius: 15px;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: var(--pop-shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-clear { background-color: #FF6347; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 105, 180, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+        }
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: #fff;
+            width: 80%;
+            max-width: 300px;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 4px solid var(--line-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: bounceIn 0.5s;
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        .modal h2 { color: #FF1493; margin: 0 0 10px 0; font-size: 24px; }
+        .modal p { color: #9370DB; margin-bottom: 20px; }
+        .modal button { background-color: #32CD32; width: 100%; font-size: 18px; }
+
+    </style>
+</head>
+<body>
+
+    <a href="christmas.html" class="back-btn">🏠 首页</a>
+
+
+    <div class="controls">
+        <button id="btn-easy" onclick="setDifficulty('easy')">✨ 简单</button>
+        <button id="btn-medium" onclick="setDifficulty('medium')">🎀 普通</button>
+        <button id="btn-hard" onclick="setDifficulty('hard')">🔥 困难</button>
+    </div>
+
+    <div class="board-container">
+        <div id="board" class="board"></div>
+    </div>
+    
+    <div class="numpad">
+        <button class="num-btn" onclick="fillNumber(1)">1</button>
+        <button class="num-btn" onclick="fillNumber(2)">2</button>
+        <button class="num-btn" onclick="fillNumber(3)">3</button>
+        <button class="num-btn" onclick="fillNumber(4)">4</button>
+        <button class="num-btn" onclick="fillNumber(5)">5</button>
+        <button class="num-btn" onclick="fillNumber(6)">6</button>
+        <button class="num-btn" onclick="fillNumber(7)">7</button>
+        <button class="num-btn" onclick="fillNumber(8)">8</button>
+        <button class="num-btn" onclick="fillNumber(9)">9</button>
+        <button class="num-btn btn-clear" onclick="fillNumber('C')">🧽</button>
+    </div>
+
+    <div id="winModal" class="modal-overlay">
+        <div class="modal">
+            <h2>🎉 哇！太棒了！💖</h2>
+            <p>你的小脑瓜真是太聪明啦！</p>
+            <button onclick="restartGame()">再玩一次 🎈</button>
+        </div>
+    </div>
+
+    <script>
+        let solution = [], puzzle = [], selectedIndex = -1, currentLevel = 'easy';
+        const DIFFICULTY = { 'easy': 30, 'medium': 45, 'hard': 55 };
+
+        window.onload = () => setDifficulty('easy');
+
+        function setDifficulty(level) {
+            currentLevel = level;
+            document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${level}`).classList.add('active');
+            startNewGame();
+        }
+
+        function restartGame() {
+            document.getElementById('winModal').classList.remove('show');
+            startNewGame();
+        }
+
+        function startNewGame() {
+            generateBoard();
+            createPuzzle(DIFFICULTY[currentLevel]);
+            renderBoard();
+        }
+
+        function generateBoard() {
+            solution = Array(81).fill(0);
+            fillBoard(solution);
+        }
+
+        function fillBoard(board) {
+            const emptyIndex = board.indexOf(0);
+            if (emptyIndex === -1) return true;
+            const row = Math.floor(emptyIndex / 9);
+            const col = emptyIndex % 9;
+            const numbers = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+            for (let num of numbers) {
+                if (isValid(board, row, col, num)) {
+                    board[emptyIndex] = num;
+                    if (fillBoard(board)) return true;
+                    board[emptyIndex] = 0;
+                }
+            }
+            return false;
+        }
+
+        function createPuzzle(holes) {
+            puzzle = [...solution];
+            let attempts = holes;
+            while (attempts > 0) {
+                let idx = Math.floor(Math.random() * 81);
+                if (puzzle[idx] !== 0) { puzzle[idx] = 0; attempts--; }
+            }
+        }
+
+        function isValid(board, row, col, num) {
+            for (let c = 0; c < 9; c++) if (board[row * 9 + c] === num) return false;
+            for (let r = 0; r < 9; r++) if (board[r * 9 + col] === num) return false;
+            const startR = Math.floor(row / 3) * 3;
+            const startC = Math.floor(col / 3) * 3;
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    if (board[(startR + r) * 9 + (startC + c)] === num) return false;
+                }
+            }
+            return true;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderBoard() {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+            puzzle.forEach((val, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (val !== 0) {
+                    cell.innerText = val;
+                    cell.classList.add('given');
+                } else {
+                    cell.onclick = () => selectCell(index);
+                    cell.id = `cell-${index}`;
+                }
+                boardDiv.appendChild(cell);
+            });
+            selectedIndex = -1;
+            highlightSameNumbers(null);
+        }
+
+        function selectCell(index) {
+            if (selectedIndex !== -1) {
+                const old = document.getElementById(`cell-${selectedIndex}`);
+                if (old) old.classList.remove('selected');
+            }
+            selectedIndex = index;
+            const current = document.getElementById(`cell-${index}`);
+            current.classList.add('selected');
+            highlightSameNumbers(current.innerText);
+        }
+
+        function highlightSameNumbers(numStr) {
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('highlight'));
+            if (!numStr) return;
+            const targetVal = parseInt(numStr);
+            if(!targetVal) return;
+            document.querySelectorAll('.cell').forEach(c => {
+                if (parseInt(c.innerText) === targetVal) c.classList.add('highlight');
+            });
+        }
+
+        function fillNumber(num) {
+            if (selectedIndex === -1) return;
+            const cell = document.getElementById(`cell-${selectedIndex}`);
+            if (num === 'C') {
+                cell.innerText = '';
+                cell.classList.remove('error');
+                highlightSameNumbers(null);
+                return;
+            }
+            const val = parseInt(num);
+            cell.innerText = val;
+            highlightSameNumbers(num);
+            if (val !== solution[selectedIndex]) {
+                cell.classList.add('error');
+            } else {
+                cell.classList.remove('error');
+                checkWin();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '1' && e.key <= '9') fillNumber(e.key);
+            if (e.key === 'Backspace' || e.key === 'Delete') fillNumber('C');
+        });
+
+        function checkWin() {
+            const cells = document.querySelectorAll('.cell');
+            let isFull = true;
+            let hasError = false;
+            for (let i = 0; i < 81; i++) {
+                if (puzzle[i] !== 0) continue;
+                const cell = document.getElementById(`cell-${i}`);
+                const val = parseInt(cell.innerText);
+                if (!val) { isFull = false; break; }
+                if (val !== solution[i]) { hasError = true; }
+            }
+            if (isFull && !hasError) showWinModal();
+        }
+
+        function showWinModal() {
+            document.getElementById('winModal').classList.add('show');
+        }
+    </script>
+</body>
+</html>

@@ -27,25 +27,37 @@
             letter-spacing: 1px;
             transition: opacity 0.4s;
         }
-        /* --- 新增：跳转按钮样式 --- */
-        .wall-btn {
+        
+        /* --- 导航按钮容器 --- */
+        .nav-box {
             position: absolute;
-            bottom: 40px; /* 距离底部的位置 */
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
+            display: flex;
+            flex-direction: column; /* 手机上垂直排列 */
+            gap: 15px; /* 按钮之间的间距 */
+            z-index: 100;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* --- 按钮样式 --- */
+        .wall-btn {
+            position: relative; /* 改为相对定位 */
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
-            border: 1px solid rgba(212, 175, 55, 0.4); /* 金色边框 */
+            border: 1px solid rgba(212, 175, 55, 0.4);
             padding: 12px 30px;
             border-radius: 50px;
             font-size: 14px;
             font-family: -apple-system, sans-serif;
             letter-spacing: 3px;
-            background: rgba(0, 0, 0, 0.6); /* 半透明黑色背景 */
+            background: rgba(0, 0, 0, 0.6);
             transition: all 0.5s ease;
-            z-index: 100;
             backdrop-filter: blur(2px);
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .wall-btn:hover {
@@ -54,18 +66,23 @@
             color: #fff;
             box-shadow: 0 0 20px rgba(212, 175, 55, 0.4), inset 0 0 10px rgba(212, 175, 55, 0.2);
             text-shadow: 0 0 5px rgba(212, 175, 55, 0.8);
-            letter-spacing: 5px; /* 悬停时字间距变宽，增加呼吸感 */
+            letter-spacing: 5px;
         }
     </style>
 </head>
 <body>
 
     <div id="loading">IGNITING LIGHTS...</div>
-    <a href="photo_wall.html" class="wall-btn">✨ Enter Memory Wall ✨</a>
+    
+    <div class="nav-box">
+        <a href="photo_wall.html" class="wall-btn">✨ Enter Memory Wall ✨</a>
+        <a href="sudoku.html" class="wall-btn">🍭 Play Sweet Sudoku 🍭</a>
+    </div>
+
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- 1. 照片配置 ---
+        // --- 1. 照片配置 (保持不变) ---
         const photoUrls = [
             'https://ickd11.github.io/lyx_2025/imgs/3.jpg',
             'https://ickd11.github.io/lyx_2025/imgs/8.jpg',
@@ -88,12 +105,10 @@
         let photoObjects = [];
         let loadedImages = [];
         
-        // 视角控制
         let rotateY = 0;
         let rotateX = -0.1; 
         
-        // 【优化】物理惯性参数
-        let velY = 0.005; // 初始自转稍微快一点
+        let velY = 0.005; 
         let velX = 0;
         let isDragging = false;
         let lastX, lastY;
@@ -102,7 +117,6 @@
 
         const FOV = 400; 
 
-        // 缓动函数
         function easeInOutCubic(t) {
             return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         }
@@ -155,7 +169,7 @@
             return { x: x2, y: y1, z: z2 };
         }
 
-        // --- 4. 粒子系统 (高亮升级版) ---
+        // --- 4. 粒子系统 ---
         class Particle {
             constructor(type) {
                 this.type = type; 
@@ -174,17 +188,15 @@
                 this.x = Math.cos(angle) * r;
                 this.z = Math.sin(angle) * r;
                 
-                // 随机相位，让每个粒子呼吸节奏不一样
                 this.blinkOffset = Math.random() * 100; 
 
                 if (this.type === 'light') {
-                    this.color = Math.random()>0.5 ? '#FFD700' : '#FF4500'; // 金色和亮橙红
+                    this.color = Math.random()>0.5 ? '#FFD700' : '#FF4500'; 
                     this.size = Math.random() * 2.5 + 1.5;
                 } else {
-                    // 【调整】树叶颜色更亮、更透
-                    const g = Math.floor(100 + Math.random()*155); // 绿色分量提高
-                    const b = Math.floor(50 + Math.random()*100);  // 蓝色分量提高（翠绿感）
-                    this.color = `rgb(40, ${g}, ${b})`; // 改用 RGB，Alpha 在绘制时动态计算
+                    const g = Math.floor(100 + Math.random()*155); 
+                    const b = Math.floor(50 + Math.random()*100);  
+                    this.color = `rgb(40, ${g}, ${b})`; 
                     this.size = Math.random() * 2 + 0.8;
                 }
             }
@@ -196,7 +208,7 @@
                 if (this.type === 'star') {
                     ctx.save();
                     ctx.translate(p2d.x, p2d.y);
-                    ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 30; // 星星光晕加强
+                    ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 30; 
                     ctx.fillStyle = '#FFD700';
                     ctx.beginPath();
                     for(let i=0; i<5; i++){
@@ -206,26 +218,17 @@
                     ctx.fill();
                     ctx.restore();
                 } else {
-                    // 【核心调整】动态亮度计算
-                    // 使用 sin 函数产生呼吸感 (0.4 到 1.0 之间波动)
                     let brightness = Math.sin(Date.now() * 0.003 + this.blinkOffset) * 0.3 + 0.7;
-                    
                     if (this.type === 'light') {
-                        // 灯光闪烁更剧烈
                         brightness = Math.sin(Date.now() * 0.006 + this.blinkOffset) * 0.5 + 0.5;
-                        ctx.shadowBlur = 10 * p2d.s * brightness; // 动态阴影
+                        ctx.shadowBlur = 10 * p2d.s * brightness; 
                         ctx.shadowColor = this.color;
                     }
-
-                    // 结合背景变暗逻辑
                     ctx.globalAlpha = brightness * Math.max(0.1, 1 - bgDarkness * 0.9);
                     ctx.fillStyle = this.color;
-
                     ctx.beginPath();
                     ctx.arc(p2d.x, p2d.y, s, 0, Math.PI*2);
                     ctx.fill();
-                    
-                    // 重置
                     ctx.globalAlpha = 1;
                     ctx.shadowBlur = 0;
                 }
@@ -313,7 +316,6 @@
 
         // --- 6. 主逻辑 ---
         function init() {
-            // 粒子数量
             for(let i=0; i<2000; i++) particles.push(new Particle('tree'));
             for(let i=0; i<250; i++) particles.push(new Particle('light'));
             particles.push(new Particle('star'));
@@ -333,7 +335,7 @@
             if(isDragging && !selectedPhoto) {
                 const dx = x - lastX; const dy = y - lastY;
                 rotateY += dx*0.005; rotateX += dy*0.005;
-                velY = dx*0.005; velX = dy*0.005; // 记录速度
+                velY = dx*0.005; velX = dy*0.005; 
                 lastX=x; lastY=y;
             }
         }
@@ -366,12 +368,10 @@
         canvas.addEventListener('mouseup', e=>handleEnd(e.clientX, e.clientY));
 
         function animate() {
-            // 【核心调整】更平滑的惯性
             if(!isDragging && !selectedPhoto) {
                 rotateY += velY; rotateX += velX;
-                velY *= 0.98; // 阻尼系数：从 0.95 改为 0.98，旋转更持久
+                velY *= 0.98; 
                 velX *= 0.98;
-                // 维持微弱自转
                 if(Math.abs(velY) < 0.002) velY = 0.002; 
             }
 
