@@ -26,6 +26,7 @@
             font-size: 14px;
             letter-spacing: 1px;
             transition: opacity 0.4s;
+            z-index: 1000;
         }
         
         /* --- 导航按钮容器 --- */
@@ -35,8 +36,8 @@
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            flex-direction: column; /* 手机上垂直排列 */
-            gap: 15px; /* 按钮之间的间距 */
+            flex-direction: column;
+            gap: 12px;
             z-index: 100;
             align-items: center;
             width: 100%;
@@ -44,29 +45,30 @@
 
         /* --- 按钮样式 --- */
         .wall-btn {
-            position: relative; /* 改为相对定位 */
+            position: relative;
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
             border: 1px solid rgba(212, 175, 55, 0.4);
-            padding: 12px 30px;
+            padding: 10px 25px;
             border-radius: 50px;
-            font-size: 14px;
+            font-size: 13px;
             font-family: -apple-system, sans-serif;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             background: rgba(0, 0, 0, 0.6);
             transition: all 0.5s ease;
             backdrop-filter: blur(2px);
             text-transform: uppercase;
             white-space: nowrap;
+            text-align: center;
+            width: 220px; /* 固定宽度保证对齐 */
         }
 
-        .wall-btn:hover {
+        .wall-btn:hover, .wall-btn:active {
             background: rgba(212, 175, 55, 0.15);
             border-color: #d4af37;
             color: #fff;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4), inset 0 0 10px rgba(212, 175, 55, 0.2);
-            text-shadow: 0 0 5px rgba(212, 175, 55, 0.8);
-            letter-spacing: 5px;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            letter-spacing: 3px;
         }
     </style>
 </head>
@@ -76,13 +78,14 @@
     
     <div class="nav-box">
         <a href="photo_wall.html" class="wall-btn">✨ Enter Memory Wall ✨</a>
+        <a href="lucky_draw.html" class="wall-btn">🎰 Lucky Slot Machine 🎰</a>
         <a href="sudoku.html" class="wall-btn">🍭 Play Sweet Sudoku 🍭</a>
     </div>
 
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- 1. 照片配置 (保持不变) ---
+        // --- 1. 照片配置 ---
         const photoUrls = [
             'https://ickd11.github.io/lyx_2025/imgs/3.jpg',
             'https://ickd11.github.io/lyx_2025/imgs/8.jpg',
@@ -104,10 +107,8 @@
         let particles = [];
         let photoObjects = [];
         let loadedImages = [];
-        
         let rotateY = 0;
         let rotateX = -0.1; 
-        
         let velY = 0.005; 
         let velX = 0;
         let isDragging = false;
@@ -121,7 +122,6 @@
             return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         }
 
-        // --- 2. 资源加载 ---
         function preloadImages(urls, cb) {
             let count = 0;
             if(urls.length === 0) return cb();
@@ -151,7 +151,6 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- 3. 3D 核心 ---
         function project3D(x, y, z) {
             const scale = FOV / (FOV + z);
             const x2d = x * scale + width/2;
@@ -169,7 +168,6 @@
             return { x: x2, y: y1, z: z2 };
         }
 
-        // --- 4. 粒子系统 ---
         class Particle {
             constructor(type) {
                 this.type = type; 
@@ -187,7 +185,6 @@
                 const angle = Math.random() * Math.PI * 2;
                 this.x = Math.cos(angle) * r;
                 this.z = Math.sin(angle) * r;
-                
                 this.blinkOffset = Math.random() * 100; 
 
                 if (this.type === 'light') {
@@ -200,11 +197,9 @@
                     this.size = Math.random() * 2 + 0.8;
                 }
             }
-            
             draw(p2d) {
                 if(p2d.z < -FOV+10 || p2d.s <= 0) return;
                 const s = this.size * p2d.s;
-                
                 if (this.type === 'star') {
                     ctx.save();
                     ctx.translate(p2d.x, p2d.y);
@@ -235,7 +230,6 @@
             }
         }
 
-        // --- 5. 照片卡片 ---
         class PhotoCard {
             constructor(img, idx, total) {
                 this.img = img;
@@ -245,20 +239,16 @@
                 const angle = idx * 2.4; 
                 this.baseX = Math.cos(angle) * r;
                 this.baseZ = Math.sin(angle) * r;
-                
                 this.isSelected = false;
                 this.animProgress = 0;
                 this.currX = this.baseX; this.currY = this.baseY; this.currZ = this.baseZ;
                 this.currSize = 50; this.currRotY = 0;
             }
-            
             update() {
                 const targetProgress = this.isSelected ? 1 : 0;
                 this.animProgress += (targetProgress - this.animProgress) * 0.08;
                 if (Math.abs(targetProgress - this.animProgress) < 0.001) this.animProgress = targetProgress;
-                
                 const t = easeInOutCubic(this.animProgress);
-
                 if (this.isSelected || this.animProgress > 0.01) {
                     const treePos = rotate(this.baseX, this.baseY, this.baseZ, rotateX, rotateY);
                     this.currX = treePos.x * (1-t) + 0 * t;
@@ -266,7 +256,6 @@
                     this.currZ = treePos.z * (1-t) + (-FOV + 150) * t;
                     this.currSize = 50 * (1-t) + 220 * t;
                     this.currRotY = t * Math.PI * 2; 
-                    
                     if (this.isSelected && t > 0.95) {
                         this.currY += Math.sin(Date.now() * 0.002) * 5;
                         this.currRotY += Math.sin(Date.now() * 0.0015) * 0.05;
@@ -277,34 +266,28 @@
                     this.currSize = 50; this.currRotY = 0;
                 }
             }
-            
             draw(p2d) {
                 if (!this.img.complete || p2d.s <= 0) return;
                 if (this.currZ < -FOV + 20 && !this.isSelected && this.animProgress < 0.1) return;
-
                 const s = this.currSize * p2d.s;
                 ctx.save();
                 ctx.translate(p2d.x, p2d.y);
                 ctx.rotate(this.currRotY);
-                
                 const pad = (this.isSelected || this.animProgress > 0.5) ? 10*p2d.s : 4*p2d.s;
                 if (this.animProgress > 0.1) {
                     ctx.shadowColor = 'rgba(0,0,0,0.5)';
                     ctx.shadowBlur = 30 * this.animProgress;
                     ctx.shadowOffsetY = 10 * this.animProgress;
                 }
-
                 ctx.fillStyle = '#fff';
                 const r = 4;
                 ctx.beginPath();
                 if(ctx.roundRect) ctx.roundRect(-s/2-pad, -s/2-pad, s+pad*2, s+pad*2, r);
                 else ctx.fillRect(-s/2-pad, -s/2-pad, s+pad*2, s+pad*2);
                 ctx.fill();
-                
                 ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
                 const min = Math.min(this.img.width, this.img.height);
                 ctx.drawImage(this.img, (this.img.width-min)/2, (this.img.height-min)/2, min, min, -s/2, -s/2, s, s);
-                
                 if (this.animProgress < 0.5) {
                     ctx.strokeStyle = '#DAA520'; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.moveTo(0, -s/2-pad); ctx.lineTo(0, -s/2-pad-10*p2d.s); ctx.stroke();
@@ -314,12 +297,10 @@
             }
         }
 
-        // --- 6. 主逻辑 ---
         function init() {
             for(let i=0; i<2000; i++) particles.push(new Particle('tree'));
             for(let i=0; i<250; i++) particles.push(new Particle('light'));
             particles.push(new Particle('star'));
-            
             loadedImages.forEach((img, i) => {
                 photoObjects.push(new PhotoCard(img, i, loadedImages.length));
             });
@@ -343,7 +324,6 @@
             isDragging = false;
             if (Math.abs(x - touchStartX) < 5 && Math.abs(y - touchStartY) < 5) handleClick(x, y);
         }
-        
         function handleClick(x, y) {
             let hit = null;
             for (let i=photoObjects.length-1; i>=0; i--) {
@@ -374,27 +354,20 @@
                 velX *= 0.98;
                 if(Math.abs(velY) < 0.002) velY = 0.002; 
             }
-
             ctx.fillStyle = '#000000';
             ctx.fillRect(0,0, width, height);
-
             const targetDark = selectedPhoto ? 1 : 0;
             bgDarkness += (targetDark - bgDarkness) * 0.1;
-            
             let renderList = [];
-
             particles.forEach(p => {
                 const p3d = rotate(p.x, p.y, p.z, rotateX, rotateY);
                 renderList.push({type:'p', z:p3d.z, obj:p, p3d:p3d});
             });
-
             photoObjects.forEach(p => {
                 p.update();
                 renderList.push({type:'photo', z:p.currZ, obj:p});
             });
-
             renderList.sort((a,b) => b.z - a.z);
-
             renderList.forEach(item => {
                 if(item.type === 'p') {
                     const p2d = project3D(item.p3d.x, item.p3d.y, item.p3d.z);
@@ -404,10 +377,8 @@
                     item.obj.draw(p2d);
                 }
             });
-
             requestAnimationFrame(animate);
         }
-
         preloadImages(photoUrls, init);
     </script>
 </body>

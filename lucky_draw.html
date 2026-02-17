@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Super Lucky Slot! 🎰✨</title>
+    <style>
+        /* 定义更浮夸的多巴胺配色 */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #FF9FB7 0%, #FFFD91 50%, #A1FFCE 100%);
+            --machine-pink: #FF68A8;
+            --machine-border: #FF3D91;
+            --neon-glow: 0 0 20px #FF3D91, 0 0 40px #FF3D91;
+            --text-main: #4A4A6A;
+            --btn-start: #00D2FF;
+            --btn-stop: #FF3D91;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', "Microsoft YaHei", sans-serif;
+            background: var(--bg-gradient);
+            background-size: 400% 400%;
+            animation: gradientMove 10s ease infinite;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- 优化后的返回按钮：悬浮胶囊风 --- */
+        .back-home {
+            position: fixed;
+            top: 25px;
+            left: 20px;
+            padding: 8px 18px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 3px solid var(--machine-pink);
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--machine-pink);
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 6px 0 var(--machine-border);
+            z-index: 1000;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .back-home:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 var(--machine-border);
+        }
+
+        /* 配置区：毛玻璃卡通风 */
+        .config-area {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(8px);
+            border: 4px dashed white;
+            padding: 15px;
+            border-radius: 25px;
+            margin-bottom: 25px;
+            width: 90%;
+            max-width: 340px;
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 50px;
+            border: 3px solid var(--machine-pink);
+            border-radius: 15px;
+            padding: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            background: #FFF;
+            resize: none;
+            color: var(--text-main);
+        }
+
+        /* 抽奖机主体：更加浮夸的造型 */
+        .machine-wrapper {
+            position: relative;
+            padding: 20px;
+            background: #fff;
+            border-radius: 50px;
+            box-shadow: 0 20px 0 #ddd;
+        }
+
+        .machine-container {
+            background: var(--machine-pink);
+            width: 260px;
+            padding: 30px 20px;
+            border-radius: 40px;
+            border: 8px solid white;
+            box-shadow: var(--neon-glow);
+            text-align: center;
+            position: relative;
+        }
+
+        /* 顶部装饰灯 */
+        .lights {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+        .light-dot {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            animation: blink 0.5s infinite alternate;
+        }
+        .light-dot:nth-child(even) { animation-delay: 0.25s; }
+
+        @keyframes blink {
+            from { background: #fff; box-shadow: 0 0 5px #fff; }
+            to { background: #FFFD91; box-shadow: 0 0 15px #FFFD91; }
+        }
+
+        /* 滚动窗口 */
+        .view-window {
+            height: 120px;
+            background: #FFF5F7;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            border: 6px solid #555; /* 经典的黑色边框感 */
+            box-shadow: inset 0 8px 0 rgba(0,0,0,0.1);
+        }
+
+        .scroll-list {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        .prize-item {
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem; /* 字体加大 */
+            font-weight: 900;
+            color: var(--text-main);
+            text-shadow: 2px 2px 0 white;
+        }
+
+        /* 按钮：果冻感反馈 */
+        .control-btns {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .jelly-btn {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            border: 4px solid white;
+            font-weight: 900;
+            cursor: pointer;
+            color: white;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+        }
+
+        #startBtn { background: var(--btn-start); }
+        #stopBtn { background: var(--btn-stop); }
+
+        .jelly-btn:active:not(:disabled) {
+            transform: scale(0.9) translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+        
+        .jelly-btn:disabled {
+            background: #ccc;
+            opacity: 0.7;
+            box-shadow: 0 4px 0 #999;
+        }
+
+        /* 结果文字动画 */
+        #resultToast {
+            margin-top: 35px;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #FF3D91;
+            text-align: center;
+            min-height: 2em;
+            text-shadow: 2px 2px 0 white, 4px 4px 0 rgba(0,0,0,0.1);
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .blur { filter: blur(6px); }
+
+        /* 成功特效：缩放 */
+        .win-animate {
+            animation: winScale 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes winScale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="christmas.html" class="back-home">
+        <span>🏠</span>
+        <span>BACK HOME</span>
+    </a>
+
+    <div class="config-area">
+        <textarea id="prizeInput" placeholder="输入超棒的选项 (逗号分隔)"></textarea>
+        <button onclick="initMachine()" style="width:100%; border:none; background:#FFFD91; color:#FF68A8; padding:10px; margin-top:10px; border-radius:15px; font-weight:bold; border: 2px solid #FF68A8;">✨ 重新装载奖池 ✨</button>
+    </div>
+
+    <div class="machine-wrapper" id="machineWrapper">
+        <div class="machine-container">
+            <div class="lights">
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+            </div>
+            
+            <div class="view-window">
+                <div class="scroll-list" id="list"></div>
+            </div>
+
+            <div class="control-btns">
+                <button class="jelly-btn" id="startBtn" onclick="startSpin()">GO!</button>
+                <button class="jelly-btn" id="stopBtn" onclick="stopSpin()" disabled>STOP</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultToast">Ready to Win? 🌈</div>
+
+    <script>
+        let items = ['🍭', '🎀', '🎁', '🎈', '💖', '⭐'];
+        let timer = null;
+        const ITEM_HEIGHT = 120;
+        const listEl = document.getElementById('list');
+
+        function initMachine() {
+            const val = document.getElementById('prizeInput').value;
+            if(val.trim()) {
+                items = val.split(/[,\n，]/).map(s => s.trim()).filter(s => s);
+            }
+            render();
+            document.getElementById('resultToast').innerText = "DONE! 🪄";
+        }
+
+        function render() {
+            listEl.innerHTML = '';
+            // 复制多份实现无限循环感
+            const displayItems = [...items, ...items, ...items, ...items, ...items];
+            displayItems.forEach(text => {
+                const div = document.createElement('div');
+                div.className = 'prize-item';
+                div.innerText = text;
+                listEl.appendChild(div);
+            });
+            listEl.style.top = "0px";
+        }
+
+        function startSpin() {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('resultToast').innerText = "SPINNING... 🔥";
+            listEl.classList.add('blur');
+            
+            let currentTop = 0;
+            timer = setInterval(() => {
+                currentTop -= 35; // 速度更快，更疯狂
+                if (Math.abs(currentTop) >= items.length * ITEM_HEIGHT) {
+                    currentTop = 0;
+                }
+                listEl.style.top = currentTop + "px";
+            }, 16);
+        }
+
+        function stopSpin() {
+            document.getElementById('stopBtn').disabled = true;
+            clearInterval(timer);
+            listEl.classList.remove('blur');
+            
+            const winIndex = Math.floor(Math.random() * items.length);
+            const winValue = items[winIndex];
+
+            listEl.style.transition = "top 1.2s cubic-bezier(0.15, 0.88, 0.3, 1.1)";
+            listEl.style.top = -(winIndex * ITEM_HEIGHT) + "px";
+
+            setTimeout(() => {
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('resultToast').innerText = `✨ WINNER: ${winValue} ✨`;
+                document.getElementById('machineWrapper').classList.add('win-animate');
+                
+                if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+                
+                setTimeout(() => {
+                    document.getElementById('machineWrapper').classList.remove('win-animate');
+                }, 500);
+            }, 1200);
+        }
+
+        render();
+    </script>
+</body>
+</html>
