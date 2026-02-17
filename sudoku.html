@@ -167,7 +167,7 @@
             font-family: 'Nunito', 'Segoe UI', sans-serif; 
             font-weight: 800; /* 加粗 */
             font-size: calc(min(92vw, 53vh) / 15); 
-            padding-top: 0; /* 不需要额外的padding了，正常字体对齐很好 */
+            padding-top: 0; 
             
             cursor: pointer;
             color: var(--txt-input);
@@ -185,11 +185,8 @@
         }
         .cell.selected { background-color: var(--selected); transform: scale(0.95); border-radius: 8px;} 
         .cell.highlight { background-color: var(--highlight); }
-        .cell.error { 
-            color: #C2185B; 
-            background-color: #F8BBD0; 
-            animation: shake 0.4s; 
-        }
+        
+        /* 删除了 .cell.error 样式，因为不再使用了 */
 
         /* --- 键盘区域 --- */
         .numpad {
@@ -264,11 +261,6 @@
             from { transform: scale(0.8) translateY(20px); opacity: 0; }
             to { transform: scale(1) translateY(0); opacity: 1; }
         }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-4px); }
-            40%, 80% { transform: translateX(4px); }
-        }
 
         .modal h2 { 
             margin: 0 0 10px 0; 
@@ -298,7 +290,7 @@
 </head>
 <body>
 
-    <a href="index.html" class="back-btn">
+    <a href="christmas.html" class="back-btn">
         <span>🏠</span> 首页
     </a>
 
@@ -335,7 +327,7 @@
     </div>
 
     <script>
-        // --- 逻辑部分保持不变 ---
+        // --- 逻辑部分 ---
         let solution = [], puzzle = [], selectedIndex = -1, currentLevel = 'easy';
         const DIFFICULTY = { 'easy': 30, 'medium': 45, 'hard': 55 };
 
@@ -455,19 +447,18 @@
             const cell = document.getElementById(`cell-${selectedIndex}`);
             if (num === 'C') {
                 cell.innerText = '';
-                cell.classList.remove('error');
+                // 移除错误样式类移除逻辑，因为现在不添加了
                 highlightSameNumbers(null);
                 return;
             }
             const val = parseInt(num);
             cell.innerText = val;
             highlightSameNumbers(num);
-            if (val !== solution[selectedIndex]) {
-                cell.classList.add('error');
-            } else {
-                cell.classList.remove('error');
-                checkWin();
-            }
+            
+            // --- 核心修改：移除了错误检查逻辑 ---
+            // 无论对错，都不添加 error class
+            
+            checkWin(); // 每次填写检查是否胜利
         }
 
         document.addEventListener('keydown', (e) => {
@@ -486,6 +477,7 @@
                 if (!val) { isFull = false; break; }
                 if (val !== solution[i]) { hasError = true; }
             }
+            // 只有填满且无错误时才胜利
             if (isFull && !hasError) showWinModal();
         }
 
